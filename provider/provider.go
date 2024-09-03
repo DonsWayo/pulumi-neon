@@ -160,13 +160,14 @@ func (d Database) Create(ctx p.Context, name string, input DatabaseArgs, preview
 	if preview {
 		return name, DatabaseState{DatabaseArgs: input}, nil
 	}
-	// TODO: Implement actual API call to create database
-	state := DatabaseState{
-		DatabaseArgs: input,
-		Id:           "db-101",
-		CreatedAt:    "2023-04-25T13:00:00Z",
+
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	database, err := client.CreateDatabase(input.ProjectId, input.BranchId, input.Name)
+	if err != nil {
+		return "", DatabaseState{}, err
 	}
-	return name, state, nil
+
+	return name, *database, nil
 }
 
 // Role resource

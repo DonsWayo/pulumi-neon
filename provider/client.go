@@ -205,4 +205,53 @@ func (c *Client) CreateEndpoint(projectId, branchId, endpointType string) (*Endp
 	}, nil
 }
 
-// Add more methods for other resources (Database, Role) here
+// CreateDatabase creates a new database in a Neon project
+func (c *Client) CreateDatabase(projectId, branchId, name string) (*DatabaseState, error) {
+	body := struct {
+		Database struct {
+			Name      string `json:"name"`
+			OwnerName string `json:"owner_name"`
+		} `json:"database"`
+	}{
+		Database: struct {
+			Name      string `json:"name"`
+			OwnerName string `json:"owner_name"`
+		}{
+			Name:      name,
+			OwnerName: "default", // We're using a default owner here. You might want to make this configurable.
+		},
+	}
+
+	resp, err := c.doRequest("POST", fmt.Sprintf("/projects/%s/branches/%s/databases", projectId, branchId), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Database struct {
+			Id        int64  `json:"id"`
+			Name      string `json:"name"`
+			OwnerName string `json:"owner_name"`
+			ProjectId string `json:"project_id"`
+			BranchId  string `json:"branch_id"`
+			CreatedAt string `json:"created_at"`
+		} `json:"database"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DatabaseState{
+		DatabaseArgs: DatabaseArgs{
+			ProjectId: result.Database.ProjectId,
+			BranchId:  result.Database.BranchId,
+			Name:      result.Database.Name,
+		},
+		Id:        fmt.Sprintf("%d", result.Database.Id),
+		CreatedAt: result.Database.CreatedAt,
+	}, nil
+}
+
+// Add more methods for other resources (Role) here
