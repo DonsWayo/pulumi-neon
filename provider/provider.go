@@ -101,13 +101,14 @@ func (b Branch) Create(ctx p.Context, name string, input BranchArgs, preview boo
 	if preview {
 		return name, BranchState{BranchArgs: input}, nil
 	}
-	// TODO: Implement actual API call to create branch
-	state := BranchState{
-		BranchArgs: input,
-		Id:         "br-456",
-		CreatedAt:  "2023-04-25T11:00:00Z",
+
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	branch, err := client.CreateBranch(input.ProjectId, input.Name)
+	if err != nil {
+		return "", BranchState{}, err
 	}
-	return name, state, nil
+
+	return name, *branch, nil
 }
 
 // Endpoint resource

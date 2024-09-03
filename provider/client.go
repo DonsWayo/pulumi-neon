@@ -112,4 +112,47 @@ func (c *Client) CreateProject(name, regionId string) (*ProjectState, error) {
 	}, nil
 }
 
-// Add more methods for other resources (Branch, Endpoint, Database, Role) here
+// CreateBranch creates a new branch in a Neon project
+func (c *Client) CreateBranch(projectId, name string) (*BranchState, error) {
+	body := struct {
+		Branch struct {
+			Name string `json:"name"`
+		} `json:"branch"`
+	}{
+		Branch: struct {
+			Name string `json:"name"`
+		}{
+			Name: name,
+		},
+	}
+
+	resp, err := c.doRequest("POST", fmt.Sprintf("/projects/%s/branches", projectId), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Branch struct {
+			Id        string `json:"id"`
+			Name      string `json:"name"`
+			ProjectId string `json:"project_id"`
+			CreatedAt string `json:"created_at"`
+		} `json:"branch"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &BranchState{
+		BranchArgs: BranchArgs{
+			ProjectId: result.Branch.ProjectId,
+			Name:      result.Branch.Name,
+		},
+		Id:        result.Branch.Id,
+		CreatedAt: result.Branch.CreatedAt,
+	}, nil
+}
+
+// Add more methods for other resources (Endpoint, Database, Role) here
