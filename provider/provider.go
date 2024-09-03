@@ -222,7 +222,7 @@ func (e Endpoint) Create(ctx p.Context, name string, input EndpointArgs, preview
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	endpoint, err := client.CreateEndpoint(input.ProjectId, input.BranchId, input.Type)
 	if err != nil {
-		return "", EndpointState{}, err
+		return "", EndpointState{}, fmt.Errorf("failed to create endpoint: %v", err)
 	}
 
 	return name, *endpoint, nil
@@ -232,7 +232,10 @@ func (e Endpoint) Read(ctx p.Context, id string, inputs EndpointArgs, state Endp
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	endpoint, err := client.GetEndpoint(state.ProjectId, state.Id)
 	if err != nil {
-		return "", EndpointArgs{}, EndpointState{}, err
+		if IsNotFoundError(err) {
+			return "", EndpointArgs{}, EndpointState{}, nil
+		}
+		return "", EndpointArgs{}, EndpointState{}, fmt.Errorf("failed to read endpoint: %v", err)
 	}
 
 	return id, endpoint.EndpointArgs, *endpoint, nil
@@ -251,7 +254,7 @@ func (e Endpoint) Update(ctx p.Context, id string, olds EndpointState, news Endp
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	endpoint, err := client.UpdateEndpoint(news.ProjectId, olds.Id, news.BranchId, news.Type)
 	if err != nil {
-		return EndpointState{}, err
+		return EndpointState{}, fmt.Errorf("failed to update endpoint: %v", err)
 	}
 
 	return *endpoint, nil
@@ -261,7 +264,10 @@ func (e Endpoint) Delete(ctx p.Context, id string, state EndpointState) error {
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	err := client.DeleteEndpoint(state.ProjectId, state.Id)
 	if err != nil {
-		return err
+		if IsNotFoundError(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to delete endpoint: %v", err)
 	}
 	return nil
 }
