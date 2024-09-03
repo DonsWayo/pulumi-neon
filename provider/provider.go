@@ -295,7 +295,7 @@ func (d Database) Create(ctx p.Context, name string, input DatabaseArgs, preview
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	database, err := client.CreateDatabase(input.ProjectId, input.BranchId, input.Name)
 	if err != nil {
-		return "", DatabaseState{}, err
+		return "", DatabaseState{}, fmt.Errorf("failed to create database: %v", err)
 	}
 
 	return name, *database, nil
@@ -305,7 +305,10 @@ func (d Database) Read(ctx p.Context, id string, inputs DatabaseArgs, state Data
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	database, err := client.GetDatabase(state.ProjectId, state.BranchId, state.Name)
 	if err != nil {
-		return "", DatabaseArgs{}, DatabaseState{}, err
+		if IsNotFoundError(err) {
+			return "", DatabaseArgs{}, DatabaseState{}, nil
+		}
+		return "", DatabaseArgs{}, DatabaseState{}, fmt.Errorf("failed to read database: %v", err)
 	}
 
 	return id, database.DatabaseArgs, *database, nil
@@ -323,7 +326,7 @@ func (d Database) Update(ctx p.Context, id string, olds DatabaseState, news Data
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	database, err := client.UpdateDatabase(news.ProjectId, news.BranchId, olds.Name, news.Name)
 	if err != nil {
-		return DatabaseState{}, err
+		return DatabaseState{}, fmt.Errorf("failed to update database: %v", err)
 	}
 
 	return *database, nil
@@ -333,7 +336,10 @@ func (d Database) Delete(ctx p.Context, id string, state DatabaseState) error {
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	err := client.DeleteDatabase(state.ProjectId, state.BranchId, state.Name)
 	if err != nil {
-		return err
+		if IsNotFoundError(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to delete database: %v", err)
 	}
 	return nil
 }
