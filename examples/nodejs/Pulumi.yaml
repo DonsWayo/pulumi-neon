@@ -1,6 +1,6 @@
-name: provider-xyz-native
+name: provider-neon-native
 runtime: nodejs
 plugins:
   providers:
-    - name: xyz
+    - name: neon
       path: ../../bin
