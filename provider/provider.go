@@ -19,6 +19,7 @@ import (
 
 	p "github.com/pulumi/pulumi-go-provider"
 	"github.com/pulumi/pulumi-go-provider/infer"
+	"github.com/pulumi/pulumi/sdk/v3/go/common/resource"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/tokens"
 )
 
@@ -77,7 +78,7 @@ func (p Project) Create(ctx p.Context, name string, input ProjectArgs, preview b
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	project, err := client.CreateProject(input.Name, input.RegionId)
 	if err != nil {
-		return "", ProjectState{}, err
+		return "", ProjectState{}, fmt.Errorf("failed to create project: %v", err)
 	}
 
 	return name, *project, nil
@@ -87,7 +88,10 @@ func (p Project) Read(ctx p.Context, id string, inputs ProjectArgs, state Projec
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	project, err := client.GetProject(state.Id)
 	if err != nil {
-		return "", ProjectArgs{}, ProjectState{}, err
+		if IsNotFoundError(err) {
+			return "", ProjectArgs{}, ProjectState{}, nil
+		}
+		return "", ProjectArgs{}, ProjectState{}, fmt.Errorf("failed to read project: %v", err)
 	}
 
 	return id, project.ProjectArgs, *project, nil
@@ -105,7 +109,7 @@ func (p Project) Update(ctx p.Context, id string, olds ProjectState, news Projec
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	project, err := client.UpdateProject(olds.Id, news.Name)
 	if err != nil {
-		return ProjectState{}, err
+		return ProjectState{}, fmt.Errorf("failed to update project: %v", err)
 	}
 
 	return *project, nil
@@ -115,7 +119,10 @@ func (p Project) Delete(ctx p.Context, id string, state ProjectState) error {
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	err := client.DeleteProject(state.Id)
 	if err != nil {
-		return err
+		if IsNotFoundError(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to delete project: %v", err)
 	}
 	return nil
 }
@@ -383,4 +390,13 @@ func (r Role) Delete(ctx p.Context, id string, state RoleState) error {
 		return err
 	}
 	return nil
+}
+
+// Helper function to check if an error is a "not found" error
+func IsNotFoundError(err error) bool {
+	// Implement the logic to determine if the error is a "not found" error
+	// This will depend on how the Neon API indicates resource not found errors
+	// For example:
+	// return strings.Contains(err.Error(), "not found")
+	return false
 }

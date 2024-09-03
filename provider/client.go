@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -713,4 +714,9 @@ func (c *Client) UpdateRole(projectId, branchId, roleName, newName string) (*Rol
 func (c *Client) DeleteRole(projectId, branchId, roleName string) error {
 	_, err := c.doRequest("DELETE", fmt.Sprintf("/projects/%s/branches/%s/roles/%s", projectId, branchId, roleName), nil)
 	return err
+}
+
+// IsNotFoundError checks if the error is a "not found" error
+func IsNotFoundError(err error) bool {
+	return strings.Contains(err.Error(), "404 Not Found")
 }
