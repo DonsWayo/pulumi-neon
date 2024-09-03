@@ -186,6 +186,12 @@ func (c *Client) UpdateProject(projectId string, name string) (*ProjectState, er
 	}, nil
 }
 
+// DeleteProject deletes an existing Neon project
+func (c *Client) DeleteProject(projectId string) error {
+	_, err := c.doRequest("DELETE", fmt.Sprintf("/projects/%s", projectId), nil)
+	return err
+}
+
 // CreateBranch creates a new branch in a Neon project
 func (c *Client) CreateBranch(projectId, name string) (*BranchState, error) {
 	body := struct {

@@ -111,6 +111,15 @@ func (p Project) Update(ctx p.Context, id string, olds ProjectState, news Projec
 	return *project, nil
 }
 
+func (p Project) Delete(ctx p.Context, id string, state ProjectState) error {
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	err := client.DeleteProject(state.Id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Branch resource
 type Branch struct{}
 
