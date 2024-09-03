@@ -365,6 +365,97 @@ func (c *Client) CreateEndpoint(projectId, branchId, endpointType string) (*Endp
 	}, nil
 }
 
+// GetEndpoint retrieves a Neon endpoint by ID
+func (c *Client) GetEndpoint(projectId, endpointId string) (*EndpointState, error) {
+	resp, err := c.doRequest("GET", fmt.Sprintf("/projects/%s/endpoints/%s", projectId, endpointId), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Endpoint struct {
+			Id        string `json:"id"`
+			Host      string `json:"host"`
+			ProjectId string `json:"project_id"`
+			BranchId  string `json:"branch_id"`
+			Type      string `json:"type"`
+			CreatedAt string `json:"created_at"`
+		} `json:"endpoint"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &EndpointState{
+		EndpointArgs: EndpointArgs{
+			ProjectId: result.Endpoint.ProjectId,
+			BranchId:  result.Endpoint.BranchId,
+			Type:      result.Endpoint.Type,
+		},
+		Id:        result.Endpoint.Id,
+		Host:      result.Endpoint.Host,
+		CreatedAt: result.Endpoint.CreatedAt,
+	}, nil
+}
+
+// UpdateEndpoint updates an existing Neon endpoint
+func (c *Client) UpdateEndpoint(projectId, endpointId string, branchId string, endpointType string) (*EndpointState, error) {
+	body := struct {
+		Endpoint struct {
+			BranchId string `json:"branch_id"`
+			Type     string `json:"type"`
+		} `json:"endpoint"`
+	}{
+		Endpoint: struct {
+			BranchId string `json:"branch_id"`
+			Type     string `json:"type"`
+		}{
+			BranchId: branchId,
+			Type:     endpointType,
+		},
+	}
+
+	resp, err := c.doRequest("PATCH", fmt.Sprintf("/projects/%s/endpoints/%s", projectId, endpointId), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Endpoint struct {
+			Id        string `json:"id"`
+			Host      string `json:"host"`
+			ProjectId string `json:"project_id"`
+			BranchId  string `json:"branch_id"`
+			Type      string `json:"type"`
+			CreatedAt string `json:"created_at"`
+		} `json:"endpoint"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &EndpointState{
+		EndpointArgs: EndpointArgs{
+			ProjectId: result.Endpoint.ProjectId,
+			BranchId:  result.Endpoint.BranchId,
+			Type:      result.Endpoint.Type,
+		},
+		Id:        result.Endpoint.Id,
+		Host:      result.Endpoint.Host,
+		CreatedAt: result.Endpoint.CreatedAt,
+	}, nil
+}
+
+// DeleteEndpoint deletes an existing Neon endpoint
+func (c *Client) DeleteEndpoint(projectId, endpointId string) error {
+	_, err := c.doRequest("DELETE", fmt.Sprintf("/projects/%s/endpoints/%s", projectId, endpointId), nil)
+	return err
+}
+
 // CreateDatabase creates a new database in a Neon project
 func (c *Client) CreateDatabase(projectId, branchId, name string) (*DatabaseState, error) {
 	body := struct {

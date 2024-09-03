@@ -215,6 +215,44 @@ func (e Endpoint) Create(ctx p.Context, name string, input EndpointArgs, preview
 	return name, *endpoint, nil
 }
 
+func (e Endpoint) Read(ctx p.Context, id string, inputs EndpointArgs, state EndpointState) (string, EndpointArgs, EndpointState, error) {
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	endpoint, err := client.GetEndpoint(state.ProjectId, state.Id)
+	if err != nil {
+		return "", EndpointArgs{}, EndpointState{}, err
+	}
+
+	return id, endpoint.EndpointArgs, *endpoint, nil
+}
+
+func (e Endpoint) Update(ctx p.Context, id string, olds EndpointState, news EndpointArgs, preview bool) (EndpointState, error) {
+	if preview {
+		return EndpointState{
+			EndpointArgs: news,
+			Id:           olds.Id,
+			Host:         olds.Host,
+			CreatedAt:    olds.CreatedAt,
+		}, nil
+	}
+
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	endpoint, err := client.UpdateEndpoint(news.ProjectId, olds.Id, news.BranchId, news.Type)
+	if err != nil {
+		return EndpointState{}, err
+	}
+
+	return *endpoint, nil
+}
+
+func (e Endpoint) Delete(ctx p.Context, id string, state EndpointState) error {
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	err := client.DeleteEndpoint(state.ProjectId, state.Id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Database resource
 type Database struct{}
 
