@@ -148,6 +148,43 @@ func (b Branch) Create(ctx p.Context, name string, input BranchArgs, preview boo
 	return name, *branch, nil
 }
 
+func (b Branch) Read(ctx p.Context, id string, inputs BranchArgs, state BranchState) (string, BranchArgs, BranchState, error) {
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	branch, err := client.GetBranch(state.ProjectId, state.Id)
+	if err != nil {
+		return "", BranchArgs{}, BranchState{}, err
+	}
+
+	return id, branch.BranchArgs, *branch, nil
+}
+
+func (b Branch) Update(ctx p.Context, id string, olds BranchState, news BranchArgs, preview bool) (BranchState, error) {
+	if preview {
+		return BranchState{
+			BranchArgs: news,
+			Id:         olds.Id,
+			CreatedAt:  olds.CreatedAt,
+		}, nil
+	}
+
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	branch, err := client.UpdateBranch(news.ProjectId, olds.Id, news.Name)
+	if err != nil {
+		return BranchState{}, err
+	}
+
+	return *branch, nil
+}
+
+func (b Branch) Delete(ctx p.Context, id string, state BranchState) error {
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	err := client.DeleteBranch(state.ProjectId, state.Id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Endpoint resource
 type Endpoint struct{}
 

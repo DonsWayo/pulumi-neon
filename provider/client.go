@@ -235,6 +235,86 @@ func (c *Client) CreateBranch(projectId, name string) (*BranchState, error) {
 	}, nil
 }
 
+// GetBranch retrieves a Neon branch by ID
+func (c *Client) GetBranch(projectId, branchId string) (*BranchState, error) {
+	resp, err := c.doRequest("GET", fmt.Sprintf("/projects/%s/branches/%s", projectId, branchId), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Branch struct {
+			Id        string `json:"id"`
+			Name      string `json:"name"`
+			ProjectId string `json:"project_id"`
+			CreatedAt string `json:"created_at"`
+		} `json:"branch"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &BranchState{
+		BranchArgs: BranchArgs{
+			ProjectId: result.Branch.ProjectId,
+			Name:      result.Branch.Name,
+		},
+		Id:        result.Branch.Id,
+		CreatedAt: result.Branch.CreatedAt,
+	}, nil
+}
+
+// UpdateBranch updates an existing Neon branch
+func (c *Client) UpdateBranch(projectId, branchId, name string) (*BranchState, error) {
+	body := struct {
+		Branch struct {
+			Name string `json:"name"`
+		} `json:"branch"`
+	}{
+		Branch: struct {
+			Name string `json:"name"`
+		}{
+			Name: name,
+		},
+	}
+
+	resp, err := c.doRequest("PATCH", fmt.Sprintf("/projects/%s/branches/%s", projectId, branchId), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Branch struct {
+			Id        string `json:"id"`
+			Name      string `json:"name"`
+			ProjectId string `json:"project_id"`
+			CreatedAt string `json:"created_at"`
+		} `json:"branch"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &BranchState{
+		BranchArgs: BranchArgs{
+			ProjectId: result.Branch.ProjectId,
+			Name:      result.Branch.Name,
+		},
+		Id:        result.Branch.Id,
+		CreatedAt: result.Branch.CreatedAt,
+	}, nil
+}
+
+// DeleteBranch deletes an existing Neon branch
+func (c *Client) DeleteBranch(projectId, branchId string) error {
+	_, err := c.doRequest("DELETE", fmt.Sprintf("/projects/%s/branches/%s", projectId, branchId), nil)
+	return err
+}
+
 // CreateEndpoint creates a new endpoint in a Neon project
 func (c *Client) CreateEndpoint(projectId, branchId, endpointType string) (*EndpointState, error) {
 	body := struct {
