@@ -505,6 +505,92 @@ func (c *Client) CreateDatabase(projectId, branchId, name string) (*DatabaseStat
 	}, nil
 }
 
+// GetDatabase retrieves a Neon database by ID
+func (c *Client) GetDatabase(projectId, branchId, databaseName string) (*DatabaseState, error) {
+	resp, err := c.doRequest("GET", fmt.Sprintf("/projects/%s/branches/%s/databases/%s", projectId, branchId, databaseName), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Database struct {
+			Id        int64  `json:"id"`
+			Name      string `json:"name"`
+			OwnerName string `json:"owner_name"`
+			ProjectId string `json:"project_id"`
+			BranchId  string `json:"branch_id"`
+			CreatedAt string `json:"created_at"`
+		} `json:"database"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DatabaseState{
+		DatabaseArgs: DatabaseArgs{
+			ProjectId: result.Database.ProjectId,
+			BranchId:  result.Database.BranchId,
+			Name:      result.Database.Name,
+		},
+		Id:        fmt.Sprintf("%d", result.Database.Id),
+		CreatedAt: result.Database.CreatedAt,
+	}, nil
+}
+
+// UpdateDatabase updates an existing Neon database
+func (c *Client) UpdateDatabase(projectId, branchId, databaseName, newName string) (*DatabaseState, error) {
+	body := struct {
+		Database struct {
+			Name string `json:"name"`
+		} `json:"database"`
+	}{
+		Database: struct {
+			Name string `json:"name"`
+		}{
+			Name: newName,
+		},
+	}
+
+	resp, err := c.doRequest("PATCH", fmt.Sprintf("/projects/%s/branches/%s/databases/%s", projectId, branchId, databaseName), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Database struct {
+			Id        int64  `json:"id"`
+			Name      string `json:"name"`
+			OwnerName string `json:"owner_name"`
+			ProjectId string `json:"project_id"`
+			BranchId  string `json:"branch_id"`
+			CreatedAt string `json:"created_at"`
+		} `json:"database"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DatabaseState{
+		DatabaseArgs: DatabaseArgs{
+			ProjectId: result.Database.ProjectId,
+			BranchId:  result.Database.BranchId,
+			Name:      result.Database.Name,
+		},
+		Id:        fmt.Sprintf("%d", result.Database.Id),
+		CreatedAt: result.Database.CreatedAt,
+	}, nil
+}
+
+// DeleteDatabase deletes an existing Neon database
+func (c *Client) DeleteDatabase(projectId, branchId, databaseName string) error {
+	_, err := c.doRequest("DELETE", fmt.Sprintf("/projects/%s/branches/%s/databases/%s", projectId, branchId, databaseName), nil)
+	return err
+}
+
 // CreateRole creates a new role in a Neon project
 func (c *Client) CreateRole(projectId, branchId, name string) (*RoleState, error) {
 	body := struct {

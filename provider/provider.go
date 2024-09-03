@@ -282,6 +282,43 @@ func (d Database) Create(ctx p.Context, name string, input DatabaseArgs, preview
 	return name, *database, nil
 }
 
+func (d Database) Read(ctx p.Context, id string, inputs DatabaseArgs, state DatabaseState) (string, DatabaseArgs, DatabaseState, error) {
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	database, err := client.GetDatabase(state.ProjectId, state.BranchId, state.Name)
+	if err != nil {
+		return "", DatabaseArgs{}, DatabaseState{}, err
+	}
+
+	return id, database.DatabaseArgs, *database, nil
+}
+
+func (d Database) Update(ctx p.Context, id string, olds DatabaseState, news DatabaseArgs, preview bool) (DatabaseState, error) {
+	if preview {
+		return DatabaseState{
+			DatabaseArgs: news,
+			Id:           olds.Id,
+			CreatedAt:    olds.CreatedAt,
+		}, nil
+	}
+
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	database, err := client.UpdateDatabase(news.ProjectId, news.BranchId, olds.Name, news.Name)
+	if err != nil {
+		return DatabaseState{}, err
+	}
+
+	return *database, nil
+}
+
+func (d Database) Delete(ctx p.Context, id string, state DatabaseState) error {
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	err := client.DeleteDatabase(state.ProjectId, state.BranchId, state.Name)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Role resource
 type Role struct{}
 
