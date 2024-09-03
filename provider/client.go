@@ -143,6 +143,49 @@ func (c *Client) GetProject(projectId string) (*ProjectState, error) {
 	}, nil
 }
 
+// UpdateProject updates an existing Neon project
+func (c *Client) UpdateProject(projectId string, name string) (*ProjectState, error) {
+	body := struct {
+		Project struct {
+			Name string `json:"name"`
+		} `json:"project"`
+	}{
+		Project: struct {
+			Name string `json:"name"`
+		}{
+			Name: name,
+		},
+	}
+
+	resp, err := c.doRequest("PATCH", fmt.Sprintf("/projects/%s", projectId), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Project struct {
+			Id        string `json:"id"`
+			Name      string `json:"name"`
+			RegionId  string `json:"region_id"`
+			CreatedAt string `json:"created_at"`
+		} `json:"project"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ProjectState{
+		ProjectArgs: ProjectArgs{
+			Name:     result.Project.Name,
+			RegionId: result.Project.RegionId,
+		},
+		Id:        result.Project.Id,
+		CreatedAt: result.Project.CreatedAt,
+	}, nil
+}
+
 // CreateBranch creates a new branch in a Neon project
 func (c *Client) CreateBranch(projectId, name string) (*BranchState, error) {
 	body := struct {
