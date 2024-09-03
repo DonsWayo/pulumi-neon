@@ -112,6 +112,37 @@ func (c *Client) CreateProject(name, regionId string) (*ProjectState, error) {
 	}, nil
 }
 
+// GetProject retrieves a Neon project by ID
+func (c *Client) GetProject(projectId string) (*ProjectState, error) {
+	resp, err := c.doRequest("GET", fmt.Sprintf("/projects/%s", projectId), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Project struct {
+			Id        string `json:"id"`
+			Name      string `json:"name"`
+			RegionId  string `json:"region_id"`
+			CreatedAt string `json:"created_at"`
+		} `json:"project"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ProjectState{
+		ProjectArgs: ProjectArgs{
+			Name:     result.Project.Name,
+			RegionId: result.Project.RegionId,
+		},
+		Id:        result.Project.Id,
+		CreatedAt: result.Project.CreatedAt,
+	}, nil
+}
+
 // CreateBranch creates a new branch in a Neon project
 func (c *Client) CreateBranch(projectId, name string) (*BranchState, error) {
 	body := struct {

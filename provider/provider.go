@@ -83,6 +83,16 @@ func (p Project) Create(ctx p.Context, name string, input ProjectArgs, preview b
 	return name, *project, nil
 }
 
+func (p Project) Read(ctx p.Context, id string, inputs ProjectArgs, state ProjectState) (string, ProjectArgs, ProjectState, error) {
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	project, err := client.GetProject(state.Id)
+	if err != nil {
+		return "", ProjectArgs{}, ProjectState{}, err
+	}
+
+	return id, project.ProjectArgs, *project, nil
+}
+
 // Branch resource
 type Branch struct{}
 
