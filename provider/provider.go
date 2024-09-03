@@ -367,7 +367,7 @@ func (r Role) Create(ctx p.Context, name string, input RoleArgs, preview bool) (
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	role, err := client.CreateRole(input.ProjectId, input.BranchId, input.Name)
 	if err != nil {
-		return "", RoleState{}, err
+		return "", RoleState{}, fmt.Errorf("failed to create role: %v", err)
 	}
 
 	return name, *role, nil
@@ -377,7 +377,10 @@ func (r Role) Read(ctx p.Context, id string, inputs RoleArgs, state RoleState) (
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	role, err := client.GetRole(state.ProjectId, state.BranchId, state.Name)
 	if err != nil {
-		return "", RoleArgs{}, RoleState{}, err
+		if IsNotFoundError(err) {
+			return "", RoleArgs{}, RoleState{}, nil
+		}
+		return "", RoleArgs{}, RoleState{}, fmt.Errorf("failed to read role: %v", err)
 	}
 
 	return id, role.RoleArgs, *role, nil
@@ -395,7 +398,7 @@ func (r Role) Update(ctx p.Context, id string, olds RoleState, news RoleArgs, pr
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	role, err := client.UpdateRole(news.ProjectId, news.BranchId, olds.Name, news.Name)
 	if err != nil {
-		return RoleState{}, err
+		return RoleState{}, fmt.Errorf("failed to update role: %v", err)
 	}
 
 	return *role, nil
@@ -405,7 +408,10 @@ func (r Role) Delete(ctx p.Context, id string, state RoleState) error {
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	err := client.DeleteRole(state.ProjectId, state.BranchId, state.Name)
 	if err != nil {
-		return err
+		if IsNotFoundError(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to delete role: %v", err)
 	}
 	return nil
 }
