@@ -189,11 +189,12 @@ func (r Role) Create(ctx p.Context, name string, input RoleArgs, preview bool) (
 	if preview {
 		return name, RoleState{RoleArgs: input}, nil
 	}
-	// TODO: Implement actual API call to create role
-	state := RoleState{
-		RoleArgs:  input,
-		Id:        "role-202",
-		CreatedAt: "2023-04-25T14:00:00Z",
+
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	role, err := client.CreateRole(input.ProjectId, input.BranchId, input.Name)
+	if err != nil {
+		return "", RoleState{}, err
 	}
-	return name, state, nil
+
+	return name, *role, nil
 }

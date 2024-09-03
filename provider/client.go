@@ -254,4 +254,46 @@ func (c *Client) CreateDatabase(projectId, branchId, name string) (*DatabaseStat
 	}, nil
 }
 
-// Add more methods for other resources (Role) here
+// CreateRole creates a new role in a Neon project
+func (c *Client) CreateRole(projectId, branchId, name string) (*RoleState, error) {
+	body := struct {
+		Role struct {
+			Name string `json:"name"`
+		} `json:"role"`
+	}{
+		Role: struct {
+			Name string `json:"name"`
+		}{
+			Name: name,
+		},
+	}
+
+	resp, err := c.doRequest("POST", fmt.Sprintf("/projects/%s/branches/%s/roles", projectId, branchId), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Role struct {
+			Name      string `json:"name"`
+			Password  string `json:"password"`
+			Protected bool   `json:"protected"`
+			CreatedAt string `json:"created_at"`
+		} `json:"role"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RoleState{
+		RoleArgs: RoleArgs{
+			ProjectId: projectId,
+			BranchId:  branchId,
+			Name:      result.Role.Name,
+		},
+		Id:        result.Role.Name, // Using the name as the ID since the API doesn't return a separate ID
+		CreatedAt: result.Role.CreatedAt,
+	}, nil
+}
