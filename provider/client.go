@@ -155,4 +155,54 @@ func (c *Client) CreateBranch(projectId, name string) (*BranchState, error) {
 	}, nil
 }
 
-// Add more methods for other resources (Endpoint, Database, Role) here
+// CreateEndpoint creates a new endpoint in a Neon project
+func (c *Client) CreateEndpoint(projectId, branchId, endpointType string) (*EndpointState, error) {
+	body := struct {
+		Endpoint struct {
+			BranchId string `json:"branch_id"`
+			Type     string `json:"type"`
+		} `json:"endpoint"`
+	}{
+		Endpoint: struct {
+			BranchId string `json:"branch_id"`
+			Type     string `json:"type"`
+		}{
+			BranchId: branchId,
+			Type:     endpointType,
+		},
+	}
+
+	resp, err := c.doRequest("POST", fmt.Sprintf("/projects/%s/endpoints", projectId), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Endpoint struct {
+			Id        string `json:"id"`
+			Host      string `json:"host"`
+			ProjectId string `json:"project_id"`
+			BranchId  string `json:"branch_id"`
+			Type      string `json:"type"`
+			CreatedAt string `json:"created_at"`
+		} `json:"endpoint"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &EndpointState{
+		EndpointArgs: EndpointArgs{
+			ProjectId: result.Endpoint.ProjectId,
+			BranchId:  result.Endpoint.BranchId,
+			Type:      result.Endpoint.Type,
+		},
+		Id:        result.Endpoint.Id,
+		Host:      result.Endpoint.Host,
+		CreatedAt: result.Endpoint.CreatedAt,
+	}, nil
+}
+
+// Add more methods for other resources (Database, Role) here

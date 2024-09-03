@@ -131,14 +131,14 @@ func (e Endpoint) Create(ctx p.Context, name string, input EndpointArgs, preview
 	if preview {
 		return name, EndpointState{EndpointArgs: input}, nil
 	}
-	// TODO: Implement actual API call to create endpoint
-	state := EndpointState{
-		EndpointArgs: input,
-		Id:           "ep-789",
-		Host:         "ep-example-123456.us-east-2.aws.neon.tech",
-		CreatedAt:    "2023-04-25T12:00:00Z",
+
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	endpoint, err := client.CreateEndpoint(input.ProjectId, input.BranchId, input.Type)
+	if err != nil {
+		return "", EndpointState{}, err
 	}
-	return name, state, nil
+
+	return name, *endpoint, nil
 }
 
 // Database resource
