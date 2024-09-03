@@ -15,8 +15,7 @@
 package provider
 
 import (
-	"math/rand"
-	"time"
+	"fmt"
 
 	p "github.com/pulumi/pulumi-go-provider"
 	"github.com/pulumi/pulumi-go-provider/infer"
@@ -30,62 +29,169 @@ const Name string = "neon"
 
 func Provider() p.Provider {
 	// We tell the provider what resources it needs to support.
-	// In this case, a single custom resource.
 	return infer.Provider(infer.Options{
 		Resources: []infer.InferredResource{
-			infer.Resource[Random, RandomArgs, RandomState](),
+			infer.Resource[Project, ProjectArgs, ProjectState](),
+			infer.Resource[Branch, BranchArgs, BranchState](),
+			infer.Resource[Endpoint, EndpointArgs, EndpointState](),
+			infer.Resource[Database, DatabaseArgs, DatabaseState](),
+			infer.Resource[Role, RoleArgs, RoleState](),
 		},
 		ModuleMap: map[tokens.ModuleName]tokens.ModuleName{
 			"provider": "index",
 		},
+		Config: infer.Config[*Config](),
 	})
 }
 
-// Each resource has a controlling struct.
-// Resource behavior is determined by implementing methods on the controlling struct.
-// The `Create` method is mandatory, but other methods are optional.
-// - Check: Remap inputs before they are typed.
-// - Diff: Change how instances of a resource are compared.
-// - Update: Mutate a resource in place.
-// - Read: Get the state of a resource from the backing provider.
-// - Delete: Custom logic when the resource is deleted.
-// - Annotate: Describe fields and set defaults for a resource.
-// - WireDependencies: Control how outputs and secrets flows through values.
-type Random struct{}
-
-// Each resource has an input struct, defining what arguments it accepts.
-type RandomArgs struct {
-	// Fields projected into Pulumi must be public and hava a `pulumi:"..."` tag.
-	// The pulumi tag doesn't need to match the field name, but it's generally a
-	// good idea.
-	Length int `pulumi:"length"`
+type Config struct {
+	ApiKey string `pulumi:"apiKey"`
 }
 
-// Each resource has a state, describing the fields that exist on the created resource.
-type RandomState struct {
-	// It is generally a good idea to embed args in outputs, but it isn't strictly necessary.
-	RandomArgs
-	// Here we define a required output called result.
-	Result string `pulumi:"result"`
-}
-
-// All resources must implement Create at a minimum.
-func (Random) Create(ctx p.Context, name string, input RandomArgs, preview bool) (string, RandomState, error) {
-	state := RandomState{RandomArgs: input}
-	if preview {
-		return name, state, nil
+func (c *Config) Validate() error {
+	if c.ApiKey == "" {
+		return fmt.Errorf("apiKey is required")
 	}
-	state.Result = makeRandom(input.Length)
+	return nil
+}
+
+// Project resource
+type Project struct{}
+
+type ProjectArgs struct {
+	Name     string `pulumi:"name"`
+	RegionId string `pulumi:"regionId"`
+}
+
+type ProjectState struct {
+	ProjectArgs
+	Id        string `pulumi:"id"`
+	CreatedAt string `pulumi:"createdAt"`
+}
+
+func (p Project) Create(ctx p.Context, name string, input ProjectArgs, preview bool) (string, ProjectState, error) {
+	if preview {
+		return name, ProjectState{ProjectArgs: input}, nil
+	}
+
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	project, err := client.CreateProject(input.Name, input.RegionId)
+	if err != nil {
+		return "", ProjectState{}, err
+	}
+
+	return name, *project, nil
+}
+
+// Branch resource
+type Branch struct{}
+
+type BranchArgs struct {
+	ProjectId string `pulumi:"projectId"`
+	Name      string `pulumi:"name"`
+}
+
+type BranchState struct {
+	BranchArgs
+	Id        string `pulumi:"id"`
+	CreatedAt string `pulumi:"createdAt"`
+}
+
+func (b Branch) Create(ctx p.Context, name string, input BranchArgs, preview bool) (string, BranchState, error) {
+	if preview {
+		return name, BranchState{BranchArgs: input}, nil
+	}
+	// TODO: Implement actual API call to create branch
+	state := BranchState{
+		BranchArgs: input,
+		Id:         "br-456",
+		CreatedAt:  "2023-04-25T11:00:00Z",
+	}
 	return name, state, nil
 }
 
-func makeRandom(length int) string {
-	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
-	charset := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") // SED_SKIP
+// Endpoint resource
+type Endpoint struct{}
 
-	result := make([]rune, length)
-	for i := range result {
-		result[i] = charset[seededRand.Intn(len(charset))]
+type EndpointArgs struct {
+	ProjectId string `pulumi:"projectId"`
+	BranchId  string `pulumi:"branchId"`
+	Type      string `pulumi:"type"`
+}
+
+type EndpointState struct {
+	EndpointArgs
+	Id        string `pulumi:"id"`
+	Host      string `pulumi:"host"`
+	CreatedAt string `pulumi:"createdAt"`
+}
+
+func (e Endpoint) Create(ctx p.Context, name string, input EndpointArgs, preview bool) (string, EndpointState, error) {
+	if preview {
+		return name, EndpointState{EndpointArgs: input}, nil
 	}
-	return string(result)
+	// TODO: Implement actual API call to create endpoint
+	state := EndpointState{
+		EndpointArgs: input,
+		Id:           "ep-789",
+		Host:         "ep-example-123456.us-east-2.aws.neon.tech",
+		CreatedAt:    "2023-04-25T12:00:00Z",
+	}
+	return name, state, nil
+}
+
+// Database resource
+type Database struct{}
+
+type DatabaseArgs struct {
+	ProjectId string `pulumi:"projectId"`
+	BranchId  string `pulumi:"branchId"`
+	Name      string `pulumi:"name"`
+}
+
+type DatabaseState struct {
+	DatabaseArgs
+	Id        string `pulumi:"id"`
+	CreatedAt string `pulumi:"createdAt"`
+}
+
+func (d Database) Create(ctx p.Context, name string, input DatabaseArgs, preview bool) (string, DatabaseState, error) {
+	if preview {
+		return name, DatabaseState{DatabaseArgs: input}, nil
+	}
+	// TODO: Implement actual API call to create database
+	state := DatabaseState{
+		DatabaseArgs: input,
+		Id:           "db-101",
+		CreatedAt:    "2023-04-25T13:00:00Z",
+	}
+	return name, state, nil
+}
+
+// Role resource
+type Role struct{}
+
+type RoleArgs struct {
+	ProjectId string `pulumi:"projectId"`
+	BranchId  string `pulumi:"branchId"`
+	Name      string `pulumi:"name"`
+}
+
+type RoleState struct {
+	RoleArgs
+	Id        string `pulumi:"id"`
+	CreatedAt string `pulumi:"createdAt"`
+}
+
+func (r Role) Create(ctx p.Context, name string, input RoleArgs, preview bool) (string, RoleState, error) {
+	if preview {
+		return name, RoleState{RoleArgs: input}, nil
+	}
+	// TODO: Implement actual API call to create role
+	state := RoleState{
+		RoleArgs:  input,
+		Id:        "role-202",
+		CreatedAt: "2023-04-25T14:00:00Z",
+	}
+	return name, state, nil
 }
