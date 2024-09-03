@@ -149,7 +149,7 @@ func (b Branch) Create(ctx p.Context, name string, input BranchArgs, preview boo
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	branch, err := client.CreateBranch(input.ProjectId, input.Name)
 	if err != nil {
-		return "", BranchState{}, err
+		return "", BranchState{}, fmt.Errorf("failed to create branch: %v", err)
 	}
 
 	return name, *branch, nil
@@ -159,7 +159,10 @@ func (b Branch) Read(ctx p.Context, id string, inputs BranchArgs, state BranchSt
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	branch, err := client.GetBranch(state.ProjectId, state.Id)
 	if err != nil {
-		return "", BranchArgs{}, BranchState{}, err
+		if IsNotFoundError(err) {
+			return "", BranchArgs{}, BranchState{}, nil
+		}
+		return "", BranchArgs{}, BranchState{}, fmt.Errorf("failed to read branch: %v", err)
 	}
 
 	return id, branch.BranchArgs, *branch, nil
@@ -177,7 +180,7 @@ func (b Branch) Update(ctx p.Context, id string, olds BranchState, news BranchAr
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	branch, err := client.UpdateBranch(news.ProjectId, olds.Id, news.Name)
 	if err != nil {
-		return BranchState{}, err
+		return BranchState{}, fmt.Errorf("failed to update branch: %v", err)
 	}
 
 	return *branch, nil
@@ -187,7 +190,10 @@ func (b Branch) Delete(ctx p.Context, id string, state BranchState) error {
 	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
 	err := client.DeleteBranch(state.ProjectId, state.Id)
 	if err != nil {
-		return err
+		if IsNotFoundError(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to delete branch: %v", err)
 	}
 	return nil
 }
