@@ -16,7 +16,6 @@ package provider
 
 import (
 	"fmt"
-	"log"
 
 	p "github.com/pulumi/pulumi-go-provider"
 	"github.com/pulumi/pulumi-go-provider/infer"
@@ -79,7 +78,12 @@ func (p Project) Create(ctx p.Context, name string, input ProjectArgs, preview b
 		return name, ProjectState{ProjectArgs: input}, nil
 	}
 
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return "", ProjectState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	project, err := client.CreateProject(input.Name, input.RegionId)
 	if err != nil {
 		providerLogger.Printf("Failed to create Project: %v", err)
@@ -92,7 +96,12 @@ func (p Project) Create(ctx p.Context, name string, input ProjectArgs, preview b
 
 func (p Project) Read(ctx p.Context, id string, inputs ProjectArgs, state ProjectState) (string, ProjectArgs, ProjectState, error) {
 	providerLogger.Printf("Reading Project: %s", id)
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return "", ProjectArgs{}, ProjectState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	project, err := client.GetProject(state.Id)
 	if err != nil {
 		if IsNotFoundError(err) {
@@ -117,7 +126,12 @@ func (p Project) Update(ctx p.Context, id string, olds ProjectState, news Projec
 		}, nil
 	}
 
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return ProjectState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	project, err := client.UpdateProject(olds.Id, news.Name)
 	if err != nil {
 		providerLogger.Printf("Failed to update Project: %v", err)
@@ -130,7 +144,12 @@ func (p Project) Update(ctx p.Context, id string, olds ProjectState, news Projec
 
 func (p Project) Delete(ctx p.Context, id string, state ProjectState) error {
 	providerLogger.Printf("Deleting Project: %s", id)
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	err := client.DeleteProject(state.Id)
 	if err != nil {
 		if IsNotFoundError(err) {
@@ -164,7 +183,12 @@ func (b Branch) Create(ctx p.Context, name string, input BranchArgs, preview boo
 		return name, BranchState{BranchArgs: input}, nil
 	}
 
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return "", BranchState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	branch, err := client.CreateBranch(input.ProjectId, input.Name)
 	if err != nil {
 		providerLogger.Printf("Failed to create Branch: %v", err)
@@ -177,7 +201,12 @@ func (b Branch) Create(ctx p.Context, name string, input BranchArgs, preview boo
 
 func (b Branch) Read(ctx p.Context, id string, inputs BranchArgs, state BranchState) (string, BranchArgs, BranchState, error) {
 	providerLogger.Printf("Reading Branch: %s", id)
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return "", BranchArgs{}, BranchState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	branch, err := client.GetBranch(state.ProjectId, state.Id)
 	if err != nil {
 		if IsNotFoundError(err) {
@@ -202,7 +231,12 @@ func (b Branch) Update(ctx p.Context, id string, olds BranchState, news BranchAr
 		}, nil
 	}
 
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return BranchState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	branch, err := client.UpdateBranch(news.ProjectId, olds.Id, news.Name)
 	if err != nil {
 		providerLogger.Printf("Failed to update Branch: %v", err)
@@ -215,7 +249,12 @@ func (b Branch) Update(ctx p.Context, id string, olds BranchState, news BranchAr
 
 func (b Branch) Delete(ctx p.Context, id string, state BranchState) error {
 	providerLogger.Printf("Deleting Branch: %s", id)
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	err := client.DeleteBranch(state.ProjectId, state.Id)
 	if err != nil {
 		if IsNotFoundError(err) {
@@ -251,7 +290,12 @@ func (e Endpoint) Create(ctx p.Context, name string, input EndpointArgs, preview
 		return name, EndpointState{EndpointArgs: input}, nil
 	}
 
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return "", EndpointState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	endpoint, err := client.CreateEndpoint(input.ProjectId, input.BranchId, input.Type)
 	if err != nil {
 		providerLogger.Printf("Failed to create Endpoint: %v", err)
@@ -264,7 +308,12 @@ func (e Endpoint) Create(ctx p.Context, name string, input EndpointArgs, preview
 
 func (e Endpoint) Read(ctx p.Context, id string, inputs EndpointArgs, state EndpointState) (string, EndpointArgs, EndpointState, error) {
 	providerLogger.Printf("Reading Endpoint: %s", id)
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return "", EndpointArgs{}, EndpointState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	endpoint, err := client.GetEndpoint(state.ProjectId, state.Id)
 	if err != nil {
 		if IsNotFoundError(err) {
@@ -290,7 +339,12 @@ func (e Endpoint) Update(ctx p.Context, id string, olds EndpointState, news Endp
 		}, nil
 	}
 
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return EndpointState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	endpoint, err := client.UpdateEndpoint(news.ProjectId, olds.Id, news.BranchId, news.Type)
 	if err != nil {
 		providerLogger.Printf("Failed to update Endpoint: %v", err)
@@ -303,7 +357,12 @@ func (e Endpoint) Update(ctx p.Context, id string, olds EndpointState, news Endp
 
 func (e Endpoint) Delete(ctx p.Context, id string, state EndpointState) error {
 	providerLogger.Printf("Deleting Endpoint: %s", id)
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	err := client.DeleteEndpoint(state.ProjectId, state.Id)
 	if err != nil {
 		if IsNotFoundError(err) {
@@ -338,7 +397,12 @@ func (d Database) Create(ctx p.Context, name string, input DatabaseArgs, preview
 		return name, DatabaseState{DatabaseArgs: input}, nil
 	}
 
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return "", DatabaseState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	database, err := client.CreateDatabase(input.ProjectId, input.BranchId, input.Name)
 	if err != nil {
 		providerLogger.Printf("Failed to create Database: %v", err)
@@ -351,7 +415,12 @@ func (d Database) Create(ctx p.Context, name string, input DatabaseArgs, preview
 
 func (d Database) Read(ctx p.Context, id string, inputs DatabaseArgs, state DatabaseState) (string, DatabaseArgs, DatabaseState, error) {
 	providerLogger.Printf("Reading Database: %s", id)
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return "", DatabaseArgs{}, DatabaseState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	database, err := client.GetDatabase(state.ProjectId, state.BranchId, state.Name)
 	if err != nil {
 		if IsNotFoundError(err) {
@@ -376,7 +445,12 @@ func (d Database) Update(ctx p.Context, id string, olds DatabaseState, news Data
 		}, nil
 	}
 
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return DatabaseState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	database, err := client.UpdateDatabase(news.ProjectId, news.BranchId, olds.Name, news.Name)
 	if err != nil {
 		providerLogger.Printf("Failed to update Database: %v", err)
@@ -389,7 +463,12 @@ func (d Database) Update(ctx p.Context, id string, olds DatabaseState, news Data
 
 func (d Database) Delete(ctx p.Context, id string, state DatabaseState) error {
 	providerLogger.Printf("Deleting Database: %s", id)
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	err := client.DeleteDatabase(state.ProjectId, state.BranchId, state.Name)
 	if err != nil {
 		if IsNotFoundError(err) {
@@ -424,7 +503,12 @@ func (r Role) Create(ctx p.Context, name string, input RoleArgs, preview bool) (
 		return name, RoleState{RoleArgs: input}, nil
 	}
 
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return "", RoleState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	role, err := client.CreateRole(input.ProjectId, input.BranchId, input.Name)
 	if err != nil {
 		providerLogger.Printf("Failed to create Role: %v", err)
@@ -437,7 +521,12 @@ func (r Role) Create(ctx p.Context, name string, input RoleArgs, preview bool) (
 
 func (r Role) Read(ctx p.Context, id string, inputs RoleArgs, state RoleState) (string, RoleArgs, RoleState, error) {
 	providerLogger.Printf("Reading Role: %s", id)
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return "", RoleArgs{}, RoleState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	role, err := client.GetRole(state.ProjectId, state.BranchId, state.Name)
 	if err != nil {
 		if IsNotFoundError(err) {
@@ -462,7 +551,12 @@ func (r Role) Update(ctx p.Context, id string, olds RoleState, news RoleArgs, pr
 		}, nil
 	}
 
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return RoleState{}, fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	role, err := client.UpdateRole(news.ProjectId, news.BranchId, olds.Name, news.Name)
 	if err != nil {
 		providerLogger.Printf("Failed to update Role: %v", err)
@@ -475,7 +569,12 @@ func (r Role) Update(ctx p.Context, id string, olds RoleState, news RoleArgs, pr
 
 func (r Role) Delete(ctx p.Context, id string, state RoleState) error {
 	providerLogger.Printf("Deleting Role: %s", id)
-	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	config := infer.GetConfig[*Config](ctx)
+	if config == nil {
+		return fmt.Errorf("missing configuration")
+	}
+
+	client := NewClient(config.ApiKey)
 	err := client.DeleteRole(state.ProjectId, state.BranchId, state.Name)
 	if err != nil {
 		if IsNotFoundError(err) {
