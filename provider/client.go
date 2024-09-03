@@ -634,3 +634,83 @@ func (c *Client) CreateRole(projectId, branchId, name string) (*RoleState, error
 		CreatedAt: result.Role.CreatedAt,
 	}, nil
 }
+
+// GetRole retrieves a Neon role by name
+func (c *Client) GetRole(projectId, branchId, roleName string) (*RoleState, error) {
+	resp, err := c.doRequest("GET", fmt.Sprintf("/projects/%s/branches/%s/roles/%s", projectId, branchId, roleName), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Role struct {
+			Name      string `json:"name"`
+			Protected bool   `json:"protected"`
+			CreatedAt string `json:"created_at"`
+		} `json:"role"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RoleState{
+		RoleArgs: RoleArgs{
+			ProjectId: projectId,
+			BranchId:  branchId,
+			Name:      result.Role.Name,
+		},
+		Id:        result.Role.Name, // Using the name as the ID since the API doesn't return a separate ID
+		CreatedAt: result.Role.CreatedAt,
+	}, nil
+}
+
+// UpdateRole updates an existing Neon role
+func (c *Client) UpdateRole(projectId, branchId, roleName, newName string) (*RoleState, error) {
+	body := struct {
+		Role struct {
+			Name string `json:"name"`
+		} `json:"role"`
+	}{
+		Role: struct {
+			Name string `json:"name"`
+		}{
+			Name: newName,
+		},
+	}
+
+	resp, err := c.doRequest("PATCH", fmt.Sprintf("/projects/%s/branches/%s/roles/%s", projectId, branchId, roleName), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Role struct {
+			Name      string `json:"name"`
+			Protected bool   `json:"protected"`
+			CreatedAt string `json:"created_at"`
+		} `json:"role"`
+	}
+
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RoleState{
+		RoleArgs: RoleArgs{
+			ProjectId: projectId,
+			BranchId:  branchId,
+			Name:      result.Role.Name,
+		},
+		Id:        result.Role.Name, // Using the name as the ID since the API doesn't return a separate ID
+		CreatedAt: result.Role.CreatedAt,
+	}, nil
+}
+
+// DeleteRole deletes an existing Neon role
+func (c *Client) DeleteRole(projectId, branchId, roleName string) error {
+	_, err := c.doRequest("DELETE", fmt.Sprintf("/projects/%s/branches/%s/roles/%s", projectId, branchId, roleName), nil)
+	return err
+}

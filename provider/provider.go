@@ -347,3 +347,40 @@ func (r Role) Create(ctx p.Context, name string, input RoleArgs, preview bool) (
 
 	return name, *role, nil
 }
+
+func (r Role) Read(ctx p.Context, id string, inputs RoleArgs, state RoleState) (string, RoleArgs, RoleState, error) {
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	role, err := client.GetRole(state.ProjectId, state.BranchId, state.Name)
+	if err != nil {
+		return "", RoleArgs{}, RoleState{}, err
+	}
+
+	return id, role.RoleArgs, *role, nil
+}
+
+func (r Role) Update(ctx p.Context, id string, olds RoleState, news RoleArgs, preview bool) (RoleState, error) {
+	if preview {
+		return RoleState{
+			RoleArgs:  news,
+			Id:        olds.Id,
+			CreatedAt: olds.CreatedAt,
+		}, nil
+	}
+
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	role, err := client.UpdateRole(news.ProjectId, news.BranchId, olds.Name, news.Name)
+	if err != nil {
+		return RoleState{}, err
+	}
+
+	return *role, nil
+}
+
+func (r Role) Delete(ctx p.Context, id string, state RoleState) error {
+	client := NewClient(ctx.GetConfig().(*Config).ApiKey)
+	err := client.DeleteRole(state.ProjectId, state.BranchId, state.Name)
+	if err != nil {
+		return err
+	}
+	return nil
+}
