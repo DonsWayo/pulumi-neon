@@ -48,7 +48,8 @@ func Provider() p.Provider {
 }
 
 type Config struct {
-	ApiKey string `pulumi:"apiKey"`
+	ApiKey  string  `pulumi:"apiKey"`
+	Version *string `pulumi:"version,optional"`
 }
 
 func (c *Config) Validate() error {
@@ -58,7 +59,6 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// Project resource
 type Project struct{}
 
 type ProjectArgs struct {
@@ -163,7 +163,6 @@ func (p Project) Delete(ctx p.Context, id string, state ProjectState) error {
 	return nil
 }
 
-// Branch resource
 type Branch struct{}
 
 type BranchArgs struct {
@@ -268,7 +267,6 @@ func (b Branch) Delete(ctx p.Context, id string, state BranchState) error {
 	return nil
 }
 
-// Endpoint resource
 type Endpoint struct{}
 
 type EndpointArgs struct {
@@ -376,7 +374,6 @@ func (e Endpoint) Delete(ctx p.Context, id string, state EndpointState) error {
 	return nil
 }
 
-// Database resource
 type Database struct{}
 
 type DatabaseArgs struct {
@@ -482,7 +479,6 @@ func (d Database) Delete(ctx p.Context, id string, state DatabaseState) error {
 	return nil
 }
 
-// Role resource
 type Role struct{}
 
 type RoleArgs struct {

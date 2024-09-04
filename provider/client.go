@@ -67,7 +67,6 @@ func (c *Client) doRequest(method, path string, body interface{}) ([]byte, error
 	return respBody, nil
 }
 
-// CreateProject creates a new Neon project
 func (c *Client) CreateProject(name, regionId string) (*ProjectState, error) {
 	body := struct {
 		Project struct {
@@ -113,7 +112,6 @@ func (c *Client) CreateProject(name, regionId string) (*ProjectState, error) {
 	}, nil
 }
 
-// GetProject retrieves a Neon project by ID
 func (c *Client) GetProject(projectId string) (*ProjectState, error) {
 	resp, err := c.doRequest("GET", fmt.Sprintf("/projects/%s", projectId), nil)
 	if err != nil {
@@ -144,7 +142,6 @@ func (c *Client) GetProject(projectId string) (*ProjectState, error) {
 	}, nil
 }
 
-// UpdateProject updates an existing Neon project
 func (c *Client) UpdateProject(projectId string, name string) (*ProjectState, error) {
 	body := struct {
 		Project struct {
@@ -187,13 +184,11 @@ func (c *Client) UpdateProject(projectId string, name string) (*ProjectState, er
 	}, nil
 }
 
-// DeleteProject deletes an existing Neon project
 func (c *Client) DeleteProject(projectId string) error {
 	_, err := c.doRequest("DELETE", fmt.Sprintf("/projects/%s", projectId), nil)
 	return err
 }
 
-// CreateBranch creates a new branch in a Neon project
 func (c *Client) CreateBranch(projectId, name string) (*BranchState, error) {
 	body := struct {
 		Branch struct {
@@ -236,7 +231,6 @@ func (c *Client) CreateBranch(projectId, name string) (*BranchState, error) {
 	}, nil
 }
 
-// GetBranch retrieves a Neon branch by ID
 func (c *Client) GetBranch(projectId, branchId string) (*BranchState, error) {
 	resp, err := c.doRequest("GET", fmt.Sprintf("/projects/%s/branches/%s", projectId, branchId), nil)
 	if err != nil {
@@ -267,7 +261,6 @@ func (c *Client) GetBranch(projectId, branchId string) (*BranchState, error) {
 	}, nil
 }
 
-// UpdateBranch updates an existing Neon branch
 func (c *Client) UpdateBranch(projectId, branchId, name string) (*BranchState, error) {
 	body := struct {
 		Branch struct {
@@ -310,13 +303,11 @@ func (c *Client) UpdateBranch(projectId, branchId, name string) (*BranchState, e
 	}, nil
 }
 
-// DeleteBranch deletes an existing Neon branch
 func (c *Client) DeleteBranch(projectId, branchId string) error {
 	_, err := c.doRequest("DELETE", fmt.Sprintf("/projects/%s/branches/%s", projectId, branchId), nil)
 	return err
 }
 
-// CreateEndpoint creates a new endpoint in a Neon project
 func (c *Client) CreateEndpoint(projectId, branchId, endpointType string) (*EndpointState, error) {
 	body := struct {
 		Endpoint struct {
@@ -366,7 +357,6 @@ func (c *Client) CreateEndpoint(projectId, branchId, endpointType string) (*Endp
 	}, nil
 }
 
-// GetEndpoint retrieves a Neon endpoint by ID
 func (c *Client) GetEndpoint(projectId, endpointId string) (*EndpointState, error) {
 	resp, err := c.doRequest("GET", fmt.Sprintf("/projects/%s/endpoints/%s", projectId, endpointId), nil)
 	if err != nil {
@@ -401,7 +391,6 @@ func (c *Client) GetEndpoint(projectId, endpointId string) (*EndpointState, erro
 	}, nil
 }
 
-// UpdateEndpoint updates an existing Neon endpoint
 func (c *Client) UpdateEndpoint(projectId, endpointId string, branchId string, endpointType string) (*EndpointState, error) {
 	body := struct {
 		Endpoint struct {
@@ -451,13 +440,11 @@ func (c *Client) UpdateEndpoint(projectId, endpointId string, branchId string, e
 	}, nil
 }
 
-// DeleteEndpoint deletes an existing Neon endpoint
 func (c *Client) DeleteEndpoint(projectId, endpointId string) error {
 	_, err := c.doRequest("DELETE", fmt.Sprintf("/projects/%s/endpoints/%s", projectId, endpointId), nil)
 	return err
 }
 
-// CreateDatabase creates a new database in a Neon project
 func (c *Client) CreateDatabase(projectId, branchId, name string) (*DatabaseState, error) {
 	body := struct {
 		Database struct {
@@ -470,7 +457,7 @@ func (c *Client) CreateDatabase(projectId, branchId, name string) (*DatabaseStat
 			OwnerName string `json:"owner_name"`
 		}{
 			Name:      name,
-			OwnerName: "default", // We're using a default owner here. You might want to make this configurable.
+			OwnerName: "default",
 		},
 	}
 
@@ -506,7 +493,6 @@ func (c *Client) CreateDatabase(projectId, branchId, name string) (*DatabaseStat
 	}, nil
 }
 
-// GetDatabase retrieves a Neon database by ID
 func (c *Client) GetDatabase(projectId, branchId, databaseName string) (*DatabaseState, error) {
 	resp, err := c.doRequest("GET", fmt.Sprintf("/projects/%s/branches/%s/databases/%s", projectId, branchId, databaseName), nil)
 	if err != nil {
@@ -540,7 +526,6 @@ func (c *Client) GetDatabase(projectId, branchId, databaseName string) (*Databas
 	}, nil
 }
 
-// UpdateDatabase updates an existing Neon database
 func (c *Client) UpdateDatabase(projectId, branchId, databaseName, newName string) (*DatabaseState, error) {
 	body := struct {
 		Database struct {
@@ -586,13 +571,11 @@ func (c *Client) UpdateDatabase(projectId, branchId, databaseName, newName strin
 	}, nil
 }
 
-// DeleteDatabase deletes an existing Neon database
 func (c *Client) DeleteDatabase(projectId, branchId, databaseName string) error {
 	_, err := c.doRequest("DELETE", fmt.Sprintf("/projects/%s/branches/%s/databases/%s", projectId, branchId, databaseName), nil)
 	return err
 }
 
-// CreateRole creates a new role in a Neon project
 func (c *Client) CreateRole(projectId, branchId, name string) (*RoleState, error) {
 	body := struct {
 		Role struct {
@@ -631,12 +614,11 @@ func (c *Client) CreateRole(projectId, branchId, name string) (*RoleState, error
 			BranchId:  branchId,
 			Name:      result.Role.Name,
 		},
-		Id:        result.Role.Name, // Using the name as the ID since the API doesn't return a separate ID
+		Id:        result.Role.Name,
 		CreatedAt: result.Role.CreatedAt,
 	}, nil
 }
 
-// GetRole retrieves a Neon role by name
 func (c *Client) GetRole(projectId, branchId, roleName string) (*RoleState, error) {
 	resp, err := c.doRequest("GET", fmt.Sprintf("/projects/%s/branches/%s/roles/%s", projectId, branchId, roleName), nil)
 	if err != nil {
@@ -662,12 +644,11 @@ func (c *Client) GetRole(projectId, branchId, roleName string) (*RoleState, erro
 			BranchId:  branchId,
 			Name:      result.Role.Name,
 		},
-		Id:        result.Role.Name, // Using the name as the ID since the API doesn't return a separate ID
+		Id:        result.Role.Name,
 		CreatedAt: result.Role.CreatedAt,
 	}, nil
 }
 
-// UpdateRole updates an existing Neon role
 func (c *Client) UpdateRole(projectId, branchId, roleName, newName string) (*RoleState, error) {
 	body := struct {
 		Role struct {
@@ -705,18 +686,16 @@ func (c *Client) UpdateRole(projectId, branchId, roleName, newName string) (*Rol
 			BranchId:  branchId,
 			Name:      result.Role.Name,
 		},
-		Id:        result.Role.Name, // Using the name as the ID since the API doesn't return a separate ID
+		Id:        result.Role.Name,
 		CreatedAt: result.Role.CreatedAt,
 	}, nil
 }
 
-// DeleteRole deletes an existing Neon role
 func (c *Client) DeleteRole(projectId, branchId, roleName string) error {
 	_, err := c.doRequest("DELETE", fmt.Sprintf("/projects/%s/branches/%s/roles/%s", projectId, branchId, roleName), nil)
 	return err
 }
 
-// IsNotFoundError checks if the error is a "not found" error
 func IsNotFoundError(err error) bool {
 	return strings.Contains(err.Error(), "404 Not Found")
 }
