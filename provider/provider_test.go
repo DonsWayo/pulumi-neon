@@ -191,6 +191,179 @@ func TestProjectDelete(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 
+func TestBranchCreate(t *testing.T) {
+	b := Branch{}
+	name := "test-branch"
+	input := BranchArgs{
+		ProjectId: "test-project-id",
+		Name:      "Test Branch",
+	}
+
+	// Mock the context
+	ctx := &mockContext{
+		config: &Config{ApiKey: "test-api-key"},
+	}
+
+	// Create a mock client
+	mockClient := &MockClient{}
+	oldNewClient := NewClient
+	NewClient = func(apiKey string) *Client {
+		return mockClient
+	}
+	defer func() { NewClient = oldNewClient }()
+
+	// Set expectations
+	mockClient.On("CreateBranch", input.ProjectId, input.Name).Return(&BranchState{
+		BranchArgs: input,
+		Id:         "test-branch-id",
+		CreatedAt:  "2023-05-01T00:00:00Z",
+	}, nil)
+
+	// Call the Create method
+	id, state, err := b.Create(ctx, name, input, false)
+
+	// Assert the results
+	assert.NoError(t, err)
+	assert.Equal(t, name, id)
+	assert.Equal(t, input.ProjectId, state.ProjectId)
+	assert.Equal(t, input.Name, state.Name)
+	assert.Equal(t, "test-branch-id", state.Id)
+	assert.Equal(t, "2023-05-01T00:00:00Z", state.CreatedAt)
+
+	// Verify that the mock was called as expected
+	mockClient.AssertExpectations(t)
+}
+
+func TestBranchRead(t *testing.T) {
+	b := Branch{}
+	id := "test-branch"
+	input := BranchArgs{
+		ProjectId: "test-project-id",
+		Name:      "Test Branch",
+	}
+	state := BranchState{
+		BranchArgs: input,
+		Id:         "test-branch-id",
+		CreatedAt:  "2023-05-01T00:00:00Z",
+	}
+
+	// Mock the context
+	ctx := &mockContext{
+		config: &Config{ApiKey: "test-api-key"},
+	}
+
+	// Create a mock client
+	mockClient := &MockClient{}
+	oldNewClient := NewClient
+	NewClient = func(apiKey string) *Client {
+		return mockClient
+	}
+	defer func() { NewClient = oldNewClient }()
+
+	// Set expectations
+	mockClient.On("GetBranch", state.ProjectId, state.Id).Return(&state, nil)
+
+	// Call the Read method
+	readId, readInput, readState, err := b.Read(ctx, id, input, state)
+
+	// Assert the results
+	assert.NoError(t, err)
+	assert.Equal(t, id, readId)
+	assert.Equal(t, input, readInput)
+	assert.Equal(t, state, readState)
+
+	// Verify that the mock was called as expected
+	mockClient.AssertExpectations(t)
+}
+
+func TestBranchUpdate(t *testing.T) {
+	b := Branch{}
+	id := "test-branch"
+	olds := BranchState{
+		BranchArgs: BranchArgs{
+			ProjectId: "test-project-id",
+			Name:      "Old Branch",
+		},
+		Id:        "test-branch-id",
+		CreatedAt: "2023-05-01T00:00:00Z",
+	}
+	news := BranchArgs{
+		ProjectId: "test-project-id",
+		Name:      "New Branch",
+	}
+
+	// Mock the context
+	ctx := &mockContext{
+		config: &Config{ApiKey: "test-api-key"},
+	}
+
+	// Create a mock client
+	mockClient := &MockClient{}
+	oldNewClient := NewClient
+	NewClient = func(apiKey string) *Client {
+		return mockClient
+	}
+	defer func() { NewClient = oldNewClient }()
+
+	// Set expectations
+	mockClient.On("UpdateBranch", news.ProjectId, olds.Id, news.Name).Return(&BranchState{
+		BranchArgs: news,
+		Id:         olds.Id,
+		CreatedAt:  olds.CreatedAt,
+	}, nil)
+
+	// Call the Update method
+	updatedState, err := b.Update(ctx, id, olds, news, false)
+
+	// Assert the results
+	assert.NoError(t, err)
+	assert.Equal(t, news.ProjectId, updatedState.ProjectId)
+	assert.Equal(t, news.Name, updatedState.Name)
+	assert.Equal(t, olds.Id, updatedState.Id)
+	assert.Equal(t, olds.CreatedAt, updatedState.CreatedAt)
+
+	// Verify that the mock was called as expected
+	mockClient.AssertExpectations(t)
+}
+
+func TestBranchDelete(t *testing.T) {
+	b := Branch{}
+	id := "test-branch"
+	state := BranchState{
+		BranchArgs: BranchArgs{
+			ProjectId: "test-project-id",
+			Name:      "Test Branch",
+		},
+		Id:        "test-branch-id",
+		CreatedAt: "2023-05-01T00:00:00Z",
+	}
+
+	// Mock the context
+	ctx := &mockContext{
+		config: &Config{ApiKey: "test-api-key"},
+	}
+
+	// Create a mock client
+	mockClient := &MockClient{}
+	oldNewClient := NewClient
+	NewClient = func(apiKey string) *Client {
+		return mockClient
+	}
+	defer func() { NewClient = oldNewClient }()
+
+	// Set expectations
+	mockClient.On("DeleteBranch", state.ProjectId, state.Id).Return(nil)
+
+	// Call the Delete method
+	err := b.Delete(ctx, id, state)
+
+	// Assert the results
+	assert.NoError(t, err)
+
+	// Verify that the mock was called as expected
+	mockClient.AssertExpectations(t)
+}
+
 // Mock client for testing
 type MockClient struct {
 	mock.Mock
@@ -213,6 +386,26 @@ func (m *MockClient) UpdateProject(projectId, name string) (*ProjectState, error
 
 func (m *MockClient) DeleteProject(projectId string) error {
 	args := m.Called(projectId)
+	return args.Error(0)
+}
+
+func (m *MockClient) CreateBranch(projectId, name string) (*BranchState, error) {
+	args := m.Called(projectId, name)
+	return args.Get(0).(*BranchState), args.Error(1)
+}
+
+func (m *MockClient) GetBranch(projectId, branchId string) (*BranchState, error) {
+	args := m.Called(projectId, branchId)
+	return args.Get(0).(*BranchState), args.Error(1)
+}
+
+func (m *MockClient) UpdateBranch(projectId, branchId, name string) (*BranchState, error) {
+	args := m.Called(projectId, branchId, name)
+	return args.Get(0).(*BranchState), args.Error(1)
+}
+
+func (m *MockClient) DeleteBranch(projectId, branchId string) error {
+	args := m.Called(projectId, branchId)
 	return args.Error(0)
 }
 
