@@ -16,10 +16,10 @@ package provider
 
 import (
 	"fmt"
+	"log"
 
 	p "github.com/pulumi/pulumi-go-provider"
 	"github.com/pulumi/pulumi-go-provider/infer"
-	"github.com/pulumi/pulumi/sdk/v3/go/common/resource"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/tokens"
 )
 
@@ -586,13 +586,4 @@ func (r Role) Delete(ctx p.Context, id string, state RoleState) error {
 	}
 	providerLogger.Printf("Role deleted successfully: %s", id)
 	return nil
-}
-
-// Helper function to check if an error is a "not found" error
-func IsNotFoundError(err error) bool {
-	// Implement the logic to determine if the error is a "not found" error
-	// This will depend on how the Neon API indicates resource not found errors
-	// For example:
-	// return strings.Contains(err.Error(), "not found")
-	return false
 }
