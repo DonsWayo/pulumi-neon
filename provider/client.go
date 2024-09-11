@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -30,19 +31,21 @@ func NewClient(apiKey string) *Client {
 
 func (c *Client) doRequest(method, path string, body interface{}) ([]byte, error) {
 	url := fmt.Sprintf("%s%s", baseURL, path)
+	log.Printf("Making request to URL: %s", url)
 
 	var reqBody io.Reader
 	if body != nil {
 		jsonBody, err := json.Marshal(body)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error marshalling request body: %v", err)
 		}
 		reqBody = bytes.NewBuffer(jsonBody)
+		log.Printf("Request body: %s", string(jsonBody))
 	}
 
 	req, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating request: %v", err)
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.apiKey))
@@ -51,14 +54,17 @@ func (c *Client) doRequest(method, path string, body interface{}) ([]byte, error
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error sending request: %v", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading response body: %v", err)
 	}
+
+	log.Printf("Response status: %d", resp.StatusCode)
+	log.Printf("Response body: %s", string(respBody))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(respBody))
@@ -189,22 +195,35 @@ func (c *Client) DeleteProject(projectId string) error {
 	return err
 }
 
-func (c *Client) CreateBranch(projectId, name string) (*BranchState, error) {
-	body := struct {
-		Branch struct {
-			Name string `json:"name"`
-		} `json:"branch"`
-	}{
-		Branch: struct {
-			Name string `json:"name"`
-		}{
-			Name: name,
-		},
+func (c *Client) CreateBranchDirect(projectId, name string) (*BranchState, error) {
+	url := fmt.Sprintf("%s/projects/%s/branches", baseURL, projectId)
+	payload := strings.NewReader(fmt.Sprintf(`{"branch":{"name":"%s"},"endpoints":[{"type":"read_only"}]}`, name))
+
+	req, err := http.NewRequest("POST", url, payload)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %v", err)
 	}
 
-	resp, err := c.doRequest("POST", fmt.Sprintf("/projects/%s/branches", projectId), body)
+	req.Header.Add("accept", "application/json")
+	req.Header.Add("content-type", "application/json")
+	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", c.apiKey))
+
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error sending request: %v", err)
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %v", err)
+	}
+
+	log.Printf("CreateBranchDirect: Response status: %d", res.StatusCode)
+	log.Printf("CreateBranchDirect: Response body: %s", string(body))
+
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return nil, fmt.Errorf("API request failed with status %d: %s", res.StatusCode, string(body))
 	}
 
 	var result struct {
@@ -216,9 +235,9 @@ func (c *Client) CreateBranch(projectId, name string) (*BranchState, error) {
 		} `json:"branch"`
 	}
 
-	err = json.Unmarshal(resp, &result)
+	err = json.Unmarshal(body, &result)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
 	return &BranchState{
@@ -229,6 +248,35 @@ func (c *Client) CreateBranch(projectId, name string) (*BranchState, error) {
 		Id:        result.Branch.Id,
 		CreatedAt: result.Branch.CreatedAt,
 	}, nil
+}
+
+func (c *Client) CreateBranch(projectId, name string) (*BranchState, error) {
+	log.Printf("CreateBranch: Starting with projectId=%s, name=%s", projectId, name)
+
+	// Log a masked version of the API key
+	maskedAPIKey := c.apiKey
+	if len(maskedAPIKey) > 8 {
+		maskedAPIKey = maskedAPIKey[:4] + "..." + maskedAPIKey[len(maskedAPIKey)-4:]
+	}
+	log.Printf("CreateBranch: Using API key: %s", maskedAPIKey)
+
+	// Validate API key
+	if len(c.apiKey) == 0 {
+		return nil, fmt.Errorf("API key is empty")
+	}
+
+	branchState, err := c.CreateBranchDirect(projectId, name)
+	if err != nil {
+		log.Printf("CreateBranch: Error occurred: %v", err)
+		if strings.Contains(err.Error(), "branch already exists") {
+			log.Printf("CreateBranch: Branch already exists, attempting to fetch existing branch")
+			return c.GetBranch(projectId, name)
+		}
+		return nil, fmt.Errorf("failed to create branch: %v", err)
+	}
+
+	log.Printf("CreateBranch: Branch created successfully: id=%s", branchState.Id)
+	return branchState, nil
 }
 
 func (c *Client) GetBranch(projectId, branchId string) (*BranchState, error) {
@@ -446,6 +494,7 @@ func (c *Client) DeleteEndpoint(projectId, endpointId string) error {
 }
 
 func (c *Client) CreateDatabase(projectId, branchId, name string) (*DatabaseState, error) {
+	log.Printf("Creating database: projectId=%s, branchId=%s, name=%s", projectId, branchId, name)
 	body := struct {
 		Database struct {
 			Name      string `json:"name"`
@@ -463,6 +512,7 @@ func (c *Client) CreateDatabase(projectId, branchId, name string) (*DatabaseStat
 
 	resp, err := c.doRequest("POST", fmt.Sprintf("/projects/%s/branches/%s/databases", projectId, branchId), body)
 	if err != nil {
+		log.Printf("Error creating database: %v", err)
 		return nil, err
 	}
 
@@ -479,9 +529,11 @@ func (c *Client) CreateDatabase(projectId, branchId, name string) (*DatabaseStat
 
 	err = json.Unmarshal(resp, &result)
 	if err != nil {
+		log.Printf("Error unmarshalling response: %v", err)
 		return nil, err
 	}
 
+	log.Printf("Database created successfully: id=%d", result.Database.Id)
 	return &DatabaseState{
 		DatabaseArgs: DatabaseArgs{
 			ProjectId: result.Database.ProjectId,
@@ -696,6 +748,9 @@ func (c *Client) DeleteRole(projectId, branchId, roleName string) error {
 	return err
 }
 
+// Comment out the IsNotFoundError function
+/*
 func IsNotFoundError(err error) bool {
 	return strings.Contains(err.Error(), "404 Not Found")
 }
+*/
